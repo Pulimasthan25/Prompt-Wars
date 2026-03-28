@@ -1,24 +1,36 @@
 const express = require('express');
 const path = require('path');
+const compression = require('compression');
 const helmet = require('helmet');
 const { generateBrief } = require('./lib/generateBrief');
-const { saveBriefSnapshot } = require('./lib/firestoreBrief');
+const { saveBriefSnapshot, hashInput } = require('./lib/firestoreBrief');
+const { exportBriefToGcs } = require('./lib/gcsExport');
+const { createGoogleAuthMiddleware } = require('./lib/googleAuthMiddleware');
 const { MAX_INPUT_LENGTH } = require('./lib/systemPrompt');
 
 function createApp(deps = {}) {
   const runGenerate = deps.generateBrief || generateBrief;
   const runSave = deps.saveBriefSnapshot || saveBriefSnapshot;
+  const runGcsExport = deps.exportBriefToGcs || exportBriefToGcs;
+  const googleAuth = deps.googleAuthMiddleware || createGoogleAuthMiddleware();
 
   const app = express();
   app.disable('x-powered-by');
+  app.use(compression());
 
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://www.googletagmanager.com',
+            'https://www.google-analytics.com',
+            'https://accounts.google.com',
+          ],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com'],
           imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
           frameSrc: [
             "'self'",
@@ -26,8 +38,18 @@ function createApp(deps = {}) {
             'https://google.com',
             'https://maps.google.com',
             'https://*.google.com',
+            'https://accounts.google.com',
           ],
-          connectSrc: ["'self'"],
+          connectSrc: [
+            "'self'",
+            'https://www.google-analytics.com',
+            'https://analytics.google.com',
+            'https://*.google-analytics.com',
+            'https://www.googletagmanager.com',
+            'https://accounts.google.com',
+            'https://oauth2.googleapis.com',
+            'https://*.googleapis.com',
+          ],
           fontSrc: ["'self'"],
         },
       },
@@ -47,7 +69,22 @@ function createApp(deps = {}) {
     res.json(healthPayload);
   });
 
-  app.post('/api/analyze', async (req, res) => {
+  app.get('/api/config', (_req, res) => {
+    res.json({
+      ga4MeasurementId: (process.env.GA4_MEASUREMENT_ID || '').trim(),
+      googleOAuthClientId: (process.env.GOOGLE_OAUTH_CLIENT_ID || '').trim(),
+      requireGoogleAuth: process.env.REQUIRE_GOOGLE_AUTH === 'true',
+      googleCloud: {
+        cloudRun: true,
+        secretManagerForGeminiKey: true,
+        firestoreEnabled: process.env.ENABLE_FIRESTORE === 'true',
+        vertexAiEnabled: process.env.USE_VERTEX_AI === 'true',
+        cloudStorageExportEnabled: !!(process.env.GCS_EXPORT_BUCKET || '').trim(),
+      },
+    });
+  });
+
+  app.post('/api/analyze', googleAuth, async (req, res) => {
     try {
       const raw = req.body?.input;
       if (raw === undefined || raw === null) {
@@ -67,11 +104,18 @@ function createApp(deps = {}) {
       }
 
       const brief = await runGenerate(input);
+      const ih = hashInput(input);
 
       try {
         await runSave(input, brief);
       } catch (persistErr) {
         console.warn('Brief persistence skipped:', persistErr.message);
+      }
+
+      try {
+        await runGcsExport(ih, brief);
+      } catch (gcsErr) {
+        console.warn('GCS export skipped:', gcsErr.message);
       }
 
       return res.json(brief);

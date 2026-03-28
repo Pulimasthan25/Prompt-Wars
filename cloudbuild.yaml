@@ -14,6 +14,7 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
+      # Add GCS_EXPORT_BUCKET, GA4_MEASUREMENT_ID, GOOGLE_OAUTH_CLIENT_ID in Console if needed.
       - '--set-env-vars=USE_VERTEX_AI=true,ENABLE_FIRESTORE=true,VERTEX_LOCATION=us-central1'
 
 options:

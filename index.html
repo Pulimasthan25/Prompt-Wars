@@ -433,7 +433,10 @@
             <h1 id="app-title">CrisisLens</h1>
             <p class="sr-only">Emergency intelligence: paste unstructured reports to generate a structured action brief.</p>
         </div>
-        <p class="tagline" aria-hidden="true">// Emergency Command Bridge</p>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <p class="tagline" aria-hidden="true">// Emergency Command Bridge</p>
+            <div id="google-signin-slot" aria-label="Google account sign-in"></div>
+        </div>
     </header>
 
     <div id="status-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -552,6 +555,57 @@
     </main>
 
     <script>
+        let googleIdToken = '';
+        let appConfig = {};
+
+        (async function loadPublicConfig() {
+            try {
+                const r = await fetch('/api/config');
+                appConfig = await r.json();
+                if (appConfig.ga4MeasurementId) initGa4(appConfig.ga4MeasurementId);
+                if (appConfig.googleOAuthClientId) initGoogleSignIn(appConfig);
+            } catch (_) { /* offline / blocked */ }
+        })();
+
+        function initGa4(measurementId) {
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
+            document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || [];
+            function gtag() { window.dataLayer.push(arguments); }
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', measurementId);
+        }
+
+        function initGoogleSignIn(cfg) {
+            var slot = document.getElementById('google-signin-slot');
+            if (!slot) return;
+            var scr = document.createElement('script');
+            scr.src = 'https://accounts.google.com/gsi/client';
+            scr.async = true;
+            scr.defer = true;
+            scr.onload = function () {
+                google.accounts.id.initialize({
+                    client_id: cfg.googleOAuthClientId,
+                    callback: function (res) {
+                        googleIdToken = res.credential;
+                        announce('Signed in with Google. You can analyze now.');
+                    },
+                    auto_select: false,
+                });
+                google.accounts.id.renderButton(slot, {
+                    type: 'standard',
+                    theme: 'filled_blue',
+                    size: 'small',
+                    text: 'signin_with',
+                    shape: 'pill',
+                });
+            };
+            document.head.appendChild(scr);
+        }
+
         const SAMPLES = {
             1: "theres a guy down, hes not responding, near the big mall on MG road, i think its his heart, he mentioned blood thinners this morning, been maybe 3 minutes, someone call someone please",
             2: "Patient: Ravi K, 67M. Allergies: penicillin. Current meds: warfarin 5mg daily, metoprolol 25mg. Hx: AFib, knee replacement 2019. Presenting today unconscious, found at home by neighbour, last seen normal yesterday evening. BP not yet taken.",
@@ -604,9 +658,13 @@
             announce('Analyzing emergency input.');
 
             try {
+                var headers = { 'Content-Type': 'application/json' };
+                if (googleIdToken) {
+                    headers['Authorization'] = 'Bearer ' + googleIdToken;
+                }
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ input })
                 });
                 const data = await response.json().catch(() => ({}));
@@ -616,6 +674,12 @@
                 }
 
                 renderResult(data);
+                if (typeof window.gtag === 'function' && appConfig.ga4MeasurementId) {
+                    window.gtag('event', 'crisis_analyze_success', {
+                        severity: data.severity || '',
+                        incident_type: data.incident_type || '',
+                    });
+                }
                 announce('Analysis complete. Review the action card in the results panel.');
                 document.getElementById('resType').focus();
             } catch (err) {

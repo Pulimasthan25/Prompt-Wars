@@ -18,11 +18,23 @@ const sampleBrief = {
   confidence: 0.82,
 };
 
-test('GET /health and /api/health return ok', async () => {
-  const app = createApp({
+const testApp = (overrides = {}) =>
+  createApp({
     generateBrief: async () => sampleBrief,
     saveBriefSnapshot: async () => {},
+    exportBriefToGcs: async () => {},
+    ...overrides,
   });
+
+test('GET /api/config exposes integration flags', async () => {
+  const app = testApp();
+  const res = await request(app).get('/api/config').expect(200);
+  assert.ok('googleCloud' in res.body);
+  assert.equal(typeof res.body.googleCloud.cloudRun, 'boolean');
+});
+
+test('GET /health and /api/health return ok', async () => {
+  const app = testApp();
   const h = await request(app).get('/health').expect(200);
   assert.equal(h.body.ok, true);
   const api = await request(app).get('/api/health').expect(200);
@@ -30,29 +42,20 @@ test('GET /health and /api/health return ok', async () => {
 });
 
 test('GET /healthz returns ok (local / non-Cloud-Run)', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).get('/healthz').expect(200);
   assert.equal(res.body.ok, true);
 });
 
 test('GET / returns CrisisLens HTML shell', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).get('/').expect(200);
   assert.match(res.headers['content-type'] || '', /text\/html/i);
   assert.match(res.text, /CrisisLens/);
 });
 
 test('POST /api/analyze returns brief from generator', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app)
     .post('/api/analyze')
     .send({ input: '  someone needs help  ' })
@@ -63,37 +66,25 @@ test('POST /api/analyze returns brief from generator', async () => {
 });
 
 test('POST /api/analyze rejects empty input', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).post('/api/analyze').send({ input: '   ' }).expect(400);
   assert.match(res.body.error, /empty/i);
 });
 
 test('POST /api/analyze rejects missing input', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).post('/api/analyze').send({}).expect(400);
   assert.match(res.body.error, /missing/i);
 });
 
 test('POST /api/analyze rejects non-string input', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).post('/api/analyze').send({ input: 123 }).expect(400);
   assert.match(res.body.error, /string/i);
 });
 
 test('POST /api/analyze rejects input over max length', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app)
     .post('/api/analyze')
     .send({ input: 'z'.repeat(MAX_INPUT_LENGTH + 1) })
@@ -102,11 +93,10 @@ test('POST /api/analyze rejects input over max length', async () => {
 });
 
 test('POST /api/analyze propagates generator errors as 500', async () => {
-  const app = createApp({
+  const app = testApp({
     generateBrief: async () => {
       throw new Error('upstream failure');
     },
-    saveBriefSnapshot: async () => {},
   });
   const res = await request(app)
     .post('/api/analyze')
@@ -116,10 +106,7 @@ test('POST /api/analyze propagates generator errors as 500', async () => {
 });
 
 test('GET /api/unknown returns 404 JSON', async () => {
-  const app = createApp({
-    generateBrief: async () => sampleBrief,
-    saveBriefSnapshot: async () => {},
-  });
+  const app = testApp();
   const res = await request(app).get('/api/nope').expect(404);
   assert.equal(res.body.error, 'Not found');
 });

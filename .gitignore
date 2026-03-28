@@ -1,1 +1,5 @@
 node_modules
+_gemini_secret.tmp
+*.tmp
+.env
+.env.*
