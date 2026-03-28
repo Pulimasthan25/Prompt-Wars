@@ -1,64 +1,106 @@
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
+const { generateBrief } = require('./lib/generateBrief');
+const { saveBriefSnapshot } = require('./lib/firestoreBrief');
+const { MAX_INPUT_LENGTH } = require('./lib/systemPrompt');
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+function createApp(deps = {}) {
+  const runGenerate = deps.generateBrief || generateBrief;
+  const runSave = deps.saveBriefSnapshot || saveBriefSnapshot;
 
-app.use(express.json());
+  const app = express();
+  app.disable('x-powered-by');
 
-// Serve static files from the current directory (for index.html)
-app.use(express.static(__dirname));
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+          frameSrc: [
+            "'self'",
+            'https://www.google.com',
+            'https://google.com',
+            'https://maps.google.com',
+            'https://*.google.com',
+          ],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+        },
+      },
+    })
+  );
+  app.use(express.json({ limit: '256kb' }));
 
-app.post('/api/analyze', async (req, res) => {
+  const healthPayload = { ok: true, service: 'crisis-lens' };
+  // Note: paths named "healthz" may be intercepted by Google Frontend on *.run.app (404 before the container).
+  app.get('/healthz', (_req, res) => {
+    res.json(healthPayload);
+  });
+  app.get('/health', (_req, res) => {
+    res.json(healthPayload);
+  });
+  app.get('/api/health', (_req, res) => {
+    res.json(healthPayload);
+  });
+
+  app.post('/api/analyze', async (req, res) => {
     try {
-        const { input } = req.body;
-        const API_KEY = process.env.GEMINI_API_KEY;
-
-        if (!API_KEY) {
-            return res.status(500).json({ error: "Server missing GEMINI_API_KEY environment variable. If deploying to Cloud Run, make sure it is added in the secret manager or as an env var." });
-        }
-
-        const payload = {
-            contents: [{ parts: [{ text: input }] }],
-            systemInstruction: {
-                parts: [{ text: "You are CrisisLens, an emergency intelligence system. Convert messy unstructured input into a structured JSON action brief. Always respond ONLY with this JSON and nothing else:\n{\n  \"severity\": \"CRITICAL\" | \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"incident_type\": \"string\",\n  \"summary\": \"one sentence plain language for a first responder\",\n  \"location_raw\": \"extracted location text\",\n  \"location_address\": \"best address guess\",\n  \"time_sensitivity\": \"seconds\" | \"minutes\" | \"hours\",\n  \"key_facts\": [\"array of 3 facts\"],\n  \"recommended_action\": \"single most important action\",\n  \"dispatch_template\": \"under 160 chars SMS-ready message\",\n  \"confidence\": 0.0 to 1.0\n}\nNever add explanation. Never add markdown. Only valid JSON." }]
-            },
-            generationConfig: {
-                responseMimeType: "application/json"
-            }
-        };
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+      const raw = req.body?.input;
+      if (raw === undefined || raw === null) {
+        return res.status(400).json({ error: 'Missing "input" in JSON body.' });
+      }
+      if (typeof raw !== 'string') {
+        return res.status(400).json({ error: '"input" must be a string.' });
+      }
+      const input = raw.trim();
+      if (!input) {
+        return res.status(400).json({ error: '"input" must not be empty.' });
+      }
+      if (input.length > MAX_INPUT_LENGTH) {
+        return res.status(400).json({
+          error: `Input exceeds maximum length of ${MAX_INPUT_LENGTH} characters.`,
         });
+      }
 
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-        }
+      const brief = await runGenerate(input);
 
-        const data = await response.json();
-        let resultText = data.candidates[0].content.parts[0].text;
+      try {
+        await runSave(input, brief);
+      } catch (persistErr) {
+        console.warn('Brief persistence skipped:', persistErr.message);
+      }
 
-        // Cleanup in case of stray markdown despite prompt
-        if (resultText.startsWith("```json")) {
-            resultText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
-        }
-
-        const parsed = JSON.parse(resultText);
-        res.json(parsed);
-
+      return res.json(brief);
     } catch (err) {
-        console.error("API failed:", err);
-        res.status(500).json({ error: err.message || "Failed to analyze input." });
+      console.error('API failed:', err);
+      const message =
+        err?.message && typeof err.message === 'string'
+          ? err.message
+          : 'Failed to analyze input.';
+      return res.status(500).json({ error: message });
     }
-});
+  });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    return res.sendFile(path.join(__dirname, 'index.html'));
+  });
 
-app.listen(PORT, () => {
+  return app;
+}
+
+const PORT = process.env.PORT || 8080;
+if (require.main === module) {
+  const app = createApp();
+  app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
-});
+  });
+}
+
+module.exports = { createApp };

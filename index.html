@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CrisisLens turns unstructured emergency reports into structured action briefs for responders.">
     <title>CrisisLens — Emergency Command Bridge</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-base: #0a0a0c;
@@ -15,8 +15,6 @@
             --accent: #3b82f6;
             --accent-hover: #2563eb;
             --border: #27272a;
-
-            /* Severities */
             --critical: #ef4444;
             --critical-bg: rgba(239, 68, 68, 0.1);
             --high: #f97316;
@@ -27,23 +25,49 @@
             --low-bg: rgba(34, 197, 94, 0.1);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
             background-color: var(--bg-base);
             color: var(--text-main);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
-        header {
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0.75rem;
+            z-index: 100;
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .skip-link:focus {
+            left: 0.75rem;
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        header[role="banner"] {
             padding: 1.5rem 2rem;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -51,6 +75,7 @@
             background-color: var(--bg-panel);
             gap: 1rem;
             z-index: 10;
+            flex-wrap: wrap;
         }
 
         .logo-icon {
@@ -64,31 +89,21 @@
             color: #fff;
             font-weight: bold;
             font-size: 1.2rem;
+            flex-shrink: 0;
         }
 
-        header h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-        }
+        header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.025em; }
+        header .tagline { color: var(--text-muted); font-size: 0.875rem; font-weight: 500; }
 
-        header span {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        main {
+        main[role="main"] {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
             padding: 2rem;
             flex: 1;
-            height: calc(100vh - 80px); /* rough header height */
-            overflow: hidden;
+            min-height: 0;
         }
 
-        /* LEFT PANEL */
         .panel {
             background-color: var(--bg-panel);
             border: 1px solid var(--border);
@@ -97,32 +112,16 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            height: 100%;
+            min-height: 320px;
+            max-height: calc(100vh - 120px);
             overflow-y: auto;
         }
 
-        .panel-header {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
+        .panel-header { display: flex; flex-direction: column; gap: 0.5rem; }
+        .panel-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+        .panel-subtitle { font-size: 0.875rem; color: var(--text-muted); }
 
-        .panel-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .panel-subtitle {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        .demo-buttons {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
+        .demo-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
         .demo-btn {
             background-color: var(--bg-elevated);
@@ -133,23 +132,21 @@
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
         }
-
-        .demo-btn:hover {
+        .demo-btn:hover, .demo-btn:focus-visible {
             background-color: var(--border);
             border-color: var(--text-muted);
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
-        .input-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
+        .input-area { flex: 1; display: flex; flex-direction: column; min-height: 140px; }
 
-        textarea {
+        textarea#rawInput {
             width: 100%;
             flex: 1;
+            min-height: 140px;
             background-color: var(--bg-elevated);
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -158,18 +155,15 @@
             font-family: inherit;
             font-size: 1rem;
             line-height: 1.6;
-            resize: none;
+            resize: vertical;
             transition: border-color 0.2s;
         }
-
-        textarea:focus {
+        textarea#rawInput:focus {
             outline: none;
             border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
         }
-
-        textarea::placeholder {
-            color: #52525b;
-        }
+        textarea#rawInput::placeholder { color: #52525b; }
 
         .btn-analyze {
             background: linear-gradient(135deg, var(--accent), var(--accent-hover));
@@ -187,58 +181,49 @@
             gap: 0.75rem;
             box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
         }
-
-        .btn-analyze:hover {
+        .btn-analyze:hover, .btn-analyze:focus-visible {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.39);
+            outline: 2px solid #fff;
+            outline-offset: 2px;
         }
-
-        .btn-analyze:active {
-            transform: translateY(0);
-        }
-
-        .btn-analyze.loading {
-            opacity: 0.8;
-            pointer-events: none;
+        .btn-analyze:active { transform: translateY(0); }
+        .btn-analyze:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
-            box-shadow: none;
         }
 
-        /* RIGHT PANEL: OUTPUT */
-        #output-panel {
-            position: relative;
-        }
+        #output-panel { position: relative; }
 
         .empty-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 1rem;
             color: var(--text-muted);
             text-align: center;
+            min-height: 200px;
+            padding: 2rem;
         }
+        .empty-state[hidden] { display: none !important; }
 
-        .empty-icon {
-            font-size: 3rem;
-            opacity: 0.5;
-        }
+        .empty-icon { font-size: 3rem; opacity: 0.5; }
 
         .loading-state {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 1.5rem;
-            width: 100%;
+            min-height: 200px;
+            padding: 2rem;
         }
+        .loading-state[hidden] { display: none !important; }
 
         .pulse-ring {
             width: 80px;
@@ -250,7 +235,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .pulse-ring::before {
             content: '';
             position: absolute;
@@ -262,32 +246,20 @@
             background: rgba(59, 130, 246, 0.2);
             animation: pulse 1.5s linear infinite;
         }
-
         @keyframes pulse {
             0% { transform: scale(0.8); opacity: 0; }
             50% { opacity: 1; }
             100% { transform: scale(1.2); opacity: 0; }
         }
+        .loading-text { font-size: 1.1rem; color: var(--text-main); font-weight: 500; }
 
-        .loading-text {
-            font-size: 1.1rem;
-            color: var(--text-main);
-            font-weight: 500;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* RESULT VIEW */
         .result-view {
-            display: none;
+            display: flex;
             flex-direction: column;
             gap: 1.5rem;
             animation: fadeIn 0.4s ease-out;
         }
+        .result-view[hidden] { display: none !important; }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -298,6 +270,8 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .badge {
@@ -308,8 +282,7 @@
             letter-spacing: 0.05em;
             text-transform: uppercase;
         }
-
-        .badge.critical { background-color: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)); }
+        .badge.critical { background-color: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical); }
         .badge.high { background-color: var(--high-bg); color: var(--high); border: 1px solid var(--high); }
         .badge.medium { background-color: var(--medium-bg); color: var(--medium); border: 1px solid var(--medium); }
         .badge.low { background-color: var(--low-bg); color: var(--low); border: 1px solid var(--low); }
@@ -326,18 +299,8 @@
             gap: 0.35rem;
         }
 
-        .incident-type {
-            font-size: 1.75rem;
-            font-weight: 800;
-            margin-top: 0.5rem;
-            color: #fff;
-        }
-
-        .summary-box {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #e4e4e7;
-        }
+        .incident-type { font-size: 1.75rem; font-weight: 800; margin-top: 0.5rem; color: #fff; }
+        .summary-box { font-size: 1.1rem; line-height: 1.6; color: #e4e4e7; }
 
         .section-title {
             font-size: 0.75rem;
@@ -348,13 +311,8 @@
             font-weight: 600;
         }
 
-        .card-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
+        .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-        /* Map Embed */
         .map-container {
             width: 100%;
             height: 160px;
@@ -363,21 +321,9 @@
             border: 1px solid var(--border);
             background: var(--bg-elevated);
         }
+        .map-container iframe { width: 100%; height: 100%; border: none; }
 
-        .map-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* Facts List */
-        .facts-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
+        .facts-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
         .facts-list li {
             background: var(--bg-elevated);
             padding: 0.75rem 1rem;
@@ -385,10 +331,9 @@
             border: 1px solid var(--border);
             font-size: 0.95rem;
             display: flex;
-            align-items:flex-start;
+            align-items: flex-start;
             gap: 0.75rem;
         }
-
         .facts-list li::before {
             content: '•';
             color: var(--accent);
@@ -403,13 +348,8 @@
             padding: 1.25rem;
             border-radius: 12px;
         }
-
         .action-box .section-title { color: var(--accent); }
-        .action-text {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #fff;
-        }
+        .action-text { font-size: 1.1rem; font-weight: 600; color: #fff; }
 
         .dispatch-box {
             background: var(--bg-elevated);
@@ -418,9 +358,8 @@
             border-radius: 12px;
             position: relative;
         }
-
         .dispatch-content {
-            font-family: monospace;
+            font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
             font-size: 0.95rem;
             color: #d4d4d8;
             line-height: 1.5;
@@ -438,21 +377,16 @@
             border-radius: 6px;
             font-size: 0.75rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: color 0.2s, border-color 0.2s;
         }
-
-        .btn-copy:hover {
+        .btn-copy:hover, .btn-copy:focus-visible {
             color: #fff;
             border-color: #fff;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
-        .confidence-meter {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
+        .confidence-meter { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
         .progress-bar-bg {
             flex: 1;
             height: 6px;
@@ -460,7 +394,6 @@
             border-radius: 99px;
             overflow: hidden;
         }
-
         .progress-bar-fill {
             height: 100%;
             background: var(--accent);
@@ -468,232 +401,243 @@
             width: 0%;
             transition: width 1s ease-out;
         }
+        .confidence-val { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
 
-        .confidence-val {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-muted);
+        .error-banner {
+            background: var(--critical-bg);
+            border: 1px solid var(--critical);
+            color: #fecaca;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
         }
+        .error-banner[hidden] { display: none !important; }
 
-        /* Scrollbar styling */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-base); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
         @media (max-width: 1024px) {
-            main {
-                grid-template-columns: 1fr;
-                height: auto;
-                overflow-y: auto;
-            }
+            main[role="main"] { grid-template-columns: 1fr; max-height: none; }
+            .panel { max-height: none; }
+            .card-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <header>
-        <div class="logo-icon">C</div>
+    <header role="banner">
+        <div class="logo-icon" aria-hidden="true">C</div>
         <div>
-            <h1>CrisisLens</h1>
+            <h1 id="app-title">CrisisLens</h1>
+            <p class="sr-only">Emergency intelligence: paste unstructured reports to generate a structured action brief.</p>
         </div>
-        <span>// Emergency Command Bridge</span>
+        <p class="tagline" aria-hidden="true">// Emergency Command Bridge</p>
     </header>
 
-    <main>
-        <!-- LEFT PANEL -->
-        <div class="panel">
+    <div id="status-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <main id="main-content" role="main" aria-labelledby="app-title">
+        <section class="panel" aria-labelledby="input-heading">
             <div class="panel-header">
-                <h2 class="panel-title">Intelligence Input</h2>
-                <p class="panel-subtitle">Select a demo sample or paste raw unstructured data.</p>
+                <h2 id="input-heading" class="panel-title">Intelligence input</h2>
+                <p id="input-desc" class="panel-subtitle">Choose a demo sample or paste raw unstructured data.</p>
             </div>
 
-            <div class="demo-buttons">
-                <button class="demo-btn" onclick="loadSample(1)">Voice transcript</button>
-                <button class="demo-btn" onclick="loadSample(2)">Medical history</button>
-                <button class="demo-btn" onclick="loadSample(3)">News report</button>
+            <div class="demo-buttons" role="group" aria-label="Demo scenarios">
+                <button type="button" class="demo-btn" id="demo1" aria-describedby="input-desc">Voice transcript</button>
+                <button type="button" class="demo-btn" id="demo2" aria-describedby="input-desc">Medical history</button>
+                <button type="button" class="demo-btn" id="demo3" aria-describedby="input-desc">News report</button>
             </div>
 
             <div class="input-area">
-                <textarea id="rawInput" placeholder="Paste any messy input here... (e.g. panicked 911 call transcript, raw scanner feeds, unformatted field reports)"></textarea>
+                <label for="rawInput" class="sr-only">Raw emergency text</label>
+                <textarea
+                    id="rawInput"
+                    name="rawInput"
+                    autocomplete="off"
+                    aria-describedby="input-desc"
+                    placeholder="Paste any messy input here… (e.g. 911 transcript, scanner feed, field report)"></textarea>
             </div>
 
-            <button class="btn-analyze" id="analyzeBtn" onclick="analyzeIncident()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-                Analyze Emergency
+            <div id="input-error" class="error-banner" role="alert" tabindex="-1" hidden></div>
+
+            <button type="button" class="btn-analyze" id="analyzeBtn" aria-describedby="input-desc">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                </svg>
+                <span>Analyze emergency</span>
             </button>
-        </div>
+        </section>
 
-        <!-- RIGHT PANEL -->
-        <div class="panel" id="output-panel">
-            <!-- EMPTY STATE -->
+        <section class="panel" id="output-panel" aria-labelledby="output-heading" aria-live="polite">
+            <h2 id="output-heading" class="sr-only">Analysis result</h2>
+
             <div class="empty-state" id="emptyState">
-                <div class="empty-icon">⌘</div>
-                <p>Awaiting raw input.<br>Action card will appear here.</p>
+                <div class="empty-icon" aria-hidden="true">⌘</div>
+                <p>Awaiting raw input.<br>An action card will appear here after you analyze.</p>
             </div>
 
-            <!-- LOADING STATE -->
-            <div class="loading-state" id="loadingState">
-                <div class="pulse-ring">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+            <div class="loading-state" id="loadingState" hidden>
+                <div class="pulse-ring" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" aria-hidden="true" focusable="false">
+                        <path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/>
+                        <path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>
+                    </svg>
                 </div>
-                <div class="loading-text">Analyzing emergency input...</div>
+                <p class="loading-text" id="loadingLabel">Analyzing emergency input…</p>
             </div>
 
-            <!-- RESULT STATE -->
-            <div class="result-view" id="resultState">
+            <div class="result-view" id="resultState" hidden>
                 <div class="result-header">
                     <div>
-                        <div class="badge" id="resSeverity">CRITICAL</div>
-                        <h2 class="incident-type" id="resType">Structure Fire</h2>
+                        <div class="badge" id="resSeverity" role="status">CRITICAL</div>
+                        <h3 class="incident-type" id="resType">Incident type</h3>
                     </div>
                     <div class="time-badge">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                        T-SENS: <span id="resTime">MINUTES</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>T-SENS: <span id="resTime">MINUTES</span></span>
                     </div>
                 </div>
 
-                <div class="summary-box" id="resSummary">
-                    Multiple units responding to a fully involved commercial structure fire with potential exposures on the C side.
-                </div>
+                <p class="summary-box" id="resSummary"></p>
 
                 <div class="card-grid">
                     <div>
-                        <div class="section-title">Key Facts Identified</div>
-                        <ul class="facts-list" id="resFacts">
-                            <!-- Injected -->
-                        </ul>
+                        <div class="section-title" id="facts-label">Key facts identified</div>
+                        <ul class="facts-list" id="resFacts" aria-labelledby="facts-label"></ul>
                     </div>
                     <div>
-                         <div class="section-title">Location Intelligence</div>
-                         <div class="map-container">
-                             <iframe id="mapFrame" src="about:blank"></iframe>
-                         </div>
-                         <div style="margin-top:0.5rem; font-size:0.875rem; color:#d4d4d8;">
-                            Raw: <span id="resLocRaw" style="font-style:italic;"></span>
-                         </div>
+                        <div class="section-title" id="loc-label">Location intelligence</div>
+                        <div class="map-container">
+                            <iframe
+                                id="mapFrame"
+                                title="Approximate incident location on Google Maps"
+                                loading="lazy"
+                                src="about:blank"></iframe>
+                        </div>
+                        <p style="margin-top:0.5rem; font-size:0.875rem; color:#d4d4d8;">
+                            <span class="section-title" style="display:inline; margin:0;">Raw extract:</span>
+                            <span id="resLocRaw" style="font-style:italic;"></span>
+                        </p>
                     </div>
                 </div>
 
                 <div class="action-box">
-                    <div class="section-title">Highest Priority Action</div>
-                    <div class="action-text" id="resAction">
-                        Initiate a 2nd alarm assignment immediately.
-                    </div>
+                    <div class="section-title">Highest priority action</div>
+                    <p class="action-text" id="resAction"></p>
                 </div>
 
                 <div class="dispatch-box">
-                    <button class="btn-copy" onclick="copyDispatch()">Copy</button>
-                    <div class="section-title">SMS Dispatch Template</div>
-                    <div class="dispatch-content" id="resDispatch">
-                        <!-- Injected -->
-                    </div>
+                    <button type="button" class="btn-copy" id="copyBtn" aria-label="Copy SMS dispatch template to clipboard">Copy</button>
+                    <div class="section-title">SMS dispatch template</div>
+                    <div class="dispatch-content" id="resDispatch"></div>
                 </div>
 
                 <div>
-                    <div class="section-title">AI Confidence Score</div>
-                    <div class="confidence-meter">
-                        <div class="progress-bar-bg">
+                    <div class="section-title" id="conf-label">AI confidence score</div>
+                    <div class="confidence-meter" role="group" aria-labelledby="conf-label">
+                        <div class="progress-bar-bg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="confProgress">
                             <div class="progress-bar-fill" id="resConfidenceBar"></div>
                         </div>
                         <div class="confidence-val" id="resConfidenceText">0%</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </main>
 
     <script>
-        const API_KEY = 'AIzaSyB-mrmP8O-FW6ccSoJJow49ySgEUL9IV0E';
-
         const SAMPLES = {
             1: "theres a guy down, hes not responding, near the big mall on MG road, i think its his heart, he mentioned blood thinners this morning, been maybe 3 minutes, someone call someone please",
             2: "Patient: Ravi K, 67M. Allergies: penicillin. Current meds: warfarin 5mg daily, metoprolol 25mg. Hx: AFib, knee replacement 2019. Presenting today unconscious, found at home by neighbour, last seen normal yesterday evening. BP not yet taken.",
             3: "Breaking: Multiple reports of gas leak near Koramangala metro station, Bangalore. Residents complaining of dizziness and nausea. At least 12 people evacuated. Source of leak unconfirmed. Winds blowing east."
         };
 
+        function announce(msg) {
+            const el = document.getElementById('status-announcer');
+            el.textContent = '';
+            requestAnimationFrame(() => { el.textContent = msg; });
+        }
+
+        function setInputError(msg) {
+            const box = document.getElementById('input-error');
+            if (!msg) {
+                box.hidden = true;
+                box.textContent = '';
+                return;
+            }
+            box.textContent = msg;
+            box.hidden = false;
+            box.focus();
+        }
+
         function loadSample(id) {
             document.getElementById('rawInput').value = SAMPLES[id];
+            setInputError('');
+            announce('Demo sample loaded into the text area.');
         }
 
         async function analyzeIncident() {
             const input = document.getElementById('rawInput').value.trim();
+            setInputError('');
             if (!input) {
-                alert("Please paste some input data first.");
+                setInputError('Please paste or type emergency text before analyzing.');
+                announce('Error: input is empty.');
+                document.getElementById('rawInput').focus();
                 return;
             }
 
-            // UI State
-            document.getElementById('emptyState').style.display = 'none';
-            document.getElementById('resultState').style.display = 'none';
-            document.getElementById('loadingState').style.display = 'flex';
+            const emptyState = document.getElementById('emptyState');
+            const loadingState = document.getElementById('loadingState');
+            const resultState = document.getElementById('resultState');
             const btn = document.getElementById('analyzeBtn');
-            btn.classList.add('loading');
-            btn.innerHTML = 'Processing...';
 
-            const payload = {
-                contents: [{ parts: [{ text: input }] }],
-                systemInstruction: {
-                    parts: [{text: "You are CrisisLens, an emergency intelligence system. Convert messy unstructured input into a structured JSON action brief. Always respond ONLY with this JSON and nothing else:\n{\n  \"severity\": \"CRITICAL\" | \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"incident_type\": \"string\",\n  \"summary\": \"one sentence plain language for a first responder\",\n  \"location_raw\": \"extracted location text\",\n  \"location_address\": \"best address guess\",\n  \"time_sensitivity\": \"seconds\" | \"minutes\" | \"hours\",\n  \"key_facts\": [\"array of 3 facts\"],\n  \"recommended_action\": \"single most important action\",\n  \"dispatch_template\": \"under 160 chars SMS-ready message\",\n  \"confidence\": 0.0 to 1.0\n}\nNever add explanation. Never add markdown. Only valid JSON."}]
-                },
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            };
+            emptyState.hidden = true;
+            resultState.hidden = true;
+            loadingState.hidden = false;
+            btn.disabled = true;
+            announce('Analyzing emergency input.');
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ input })
                 });
+                const data = await response.json().catch(() => ({}));
 
-                if (!response.ok) throw new Error("API Network Error");
-
-                const data = await response.json();
-                let resultText = data.candidates[0].content.parts[0].text;
-
-                // Cleanup in case of stray markdown despite prompt
-                if (resultText.startsWith("```json")) {
-                    resultText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Analysis request failed.');
                 }
 
-                const parsed = JSON.parse(resultText);
-                renderResult(parsed);
-
+                renderResult(data);
+                announce('Analysis complete. Review the action card in the results panel.');
+                document.getElementById('resType').focus();
             } catch (err) {
-                console.warn("API failed, using fallback mock:", err);
-                renderResult({
-                    severity: "HIGH",
-                    incident_type: "Medical Emergency",
-                    summary: "Mock fallback: Unresponsive male potentially suffering from cardiac event.",
-                    location_raw: "near the big mall on MG road",
-                    location_address: "MG Road, Bangalore",
-                    time_sensitivity: "seconds",
-                    key_facts: ["Unresponsive", "On blood thinners", "Found 3 mins ago"],
-                    recommended_action: "Dispatch ALS ambulance immediately.",
-                    dispatch_template: "Med Emerge: Unresponsive male near MG Road mall. Hx blood thinners. ALS en route.",
-                    confidence: 0.85
-                });
+                announce('Analysis failed: ' + (err.message || 'Unknown error'));
+                setInputError(err.message || 'Could not reach the server. Try again.');
+                emptyState.hidden = false;
             } finally {
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('resultState').style.display = 'flex';
-                btn.classList.remove('loading');
-                btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Analyze Emergency';
+                loadingState.hidden = true;
+                btn.disabled = false;
             }
         }
 
         function renderResult(data) {
-            // Severity
             const sevEl = document.getElementById('resSeverity');
-            sevEl.textContent = data.severity;
-            sevEl.className = 'badge ' + (data.severity ? data.severity.toLowerCase() : 'medium');
+            const sev = (data.severity || 'MEDIUM').toLowerCase();
+            sevEl.textContent = data.severity || 'MEDIUM';
+            sevEl.className = 'badge ' + (['critical','high','medium','low'].includes(sev) ? sev : 'medium');
 
-            document.getElementById('resType').textContent = data.incident_type;
-            document.getElementById('resTime').textContent = data.time_sensitivity.toUpperCase();
-            document.getElementById('resSummary').textContent = data.summary;
+            document.getElementById('resType').textContent = data.incident_type || 'Unknown incident';
+            document.getElementById('resTime').textContent = (data.time_sensitivity || 'minutes').toUpperCase();
+            document.getElementById('resSummary').textContent = data.summary || '';
 
-            // Facts
             const factsEl = document.getElementById('resFacts');
             factsEl.innerHTML = '';
             (data.key_facts || []).forEach(f => {
@@ -702,36 +646,45 @@
                 factsEl.appendChild(li);
             });
 
-            // Location
-            document.getElementById('resLocRaw').textContent = data.location_raw;
-            if (data.location_address && data.location_address.toLowerCase() !== "unknown") {
-                document.getElementById('mapFrame').src = `https://maps.google.com/maps?q=${encodeURIComponent(data.location_address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+            document.getElementById('resLocRaw').textContent = data.location_raw || '';
+            const addr = data.location_address;
+            const map = document.getElementById('mapFrame');
+            if (addr && String(addr).toLowerCase() !== 'unknown') {
+                map.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(addr) + '&t=&z=13&ie=UTF8&iwloc=&output=embed';
             } else {
-                document.getElementById('mapFrame').src = `about:blank`;
+                map.src = 'about:blank';
             }
 
-            document.getElementById('resAction').textContent = data.recommended_action;
-            document.getElementById('resDispatch').textContent = data.dispatch_template;
+            document.getElementById('resAction').textContent = data.recommended_action || '';
+            document.getElementById('resDispatch').textContent = data.dispatch_template || '';
 
-            // Confidence
-            const confPercent = Math.round((data.confidence || 0) * 100);
-
-            // Reset bar
-            document.getElementById('resConfidenceBar').style.width = '0%';
-
-            setTimeout(() => {
-                document.getElementById('resConfidenceBar').style.width = confPercent + '%';
-            }, 100);
+            const confPercent = Math.round((Number(data.confidence) || 0) * 100);
+            const bar = document.getElementById('resConfidenceBar');
+            const prog = document.getElementById('confProgress');
+            bar.style.width = '0%';
+            prog.setAttribute('aria-valuenow', String(confPercent));
+            setTimeout(() => { bar.style.width = confPercent + '%'; }, 100);
             document.getElementById('resConfidenceText').textContent = confPercent + '% confidence';
+
+            document.getElementById('emptyState').hidden = true;
+            document.getElementById('resultState').hidden = false;
         }
 
         function copyDispatch() {
             const text = document.getElementById('resDispatch').textContent.trim();
             navigator.clipboard.writeText(text);
-            const btn = document.querySelector('.btn-copy');
-            btn.textContent = "Copied!";
-            setTimeout(() => btn.textContent = "Copy", 2000);
+            const btn = document.getElementById('copyBtn');
+            const prev = btn.textContent;
+            btn.textContent = 'Copied';
+            announce('Dispatch text copied to clipboard.');
+            setTimeout(() => { btn.textContent = prev; }, 2000);
         }
+
+        document.getElementById('demo1').addEventListener('click', () => loadSample(1));
+        document.getElementById('demo2').addEventListener('click', () => loadSample(2));
+        document.getElementById('demo3').addEventListener('click', () => loadSample(3));
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeIncident);
+        document.getElementById('copyBtn').addEventListener('click', copyDispatch);
     </script>
 </body>
 </html>

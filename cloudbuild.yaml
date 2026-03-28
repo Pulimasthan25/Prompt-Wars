@@ -14,6 +14,7 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
+      - '--set-env-vars=USE_VERTEX_AI=true,ENABLE_FIRESTORE=true,VERTEX_LOCATION=us-central1'
 
 options:
   logging: CLOUD_LOGGING_ONLY
