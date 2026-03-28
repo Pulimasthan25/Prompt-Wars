@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      NODE_ENV: development
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-test-key}
+      ADMIN_KEY: ${ADMIN_KEY:-test-admin-key}
+      ALLOWED_ORIGINS: "http://localhost:8080,http://localhost:3000"
+      # Disable Cloud services locally
+      GOOGLE_CLOUD_PROJECT: ""
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - firestore-emulator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  firestore-emulator:
+    image: google/cloud-cli:emulators
+    ports:
+      - "8081:8081"
+    entrypoint: gcloud beta emulators firestore start --host-port=0.0.0.0:8081
+    environment:
+      FIRESTORE_EMULATOR_HOST: "0.0.0.0:8081"
+
+volumes:
+  firestore-data:

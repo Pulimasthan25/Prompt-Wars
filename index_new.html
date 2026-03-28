@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CrisisLens - Emergency Intelligence System powered by Google AI">
+    <meta name="theme-color" content="#0a0a0c">
     <title>CrisisLens — Emergency Command Bridge</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -15,8 +17,8 @@
             --accent: #3b82f6;
             --accent-hover: #2563eb;
             --border: #27272a;
-
-            /* Severities */
+            --error: #ef4444;
+            --success: #22c55e;
             --critical: #ef4444;
             --critical-bg: rgba(239, 68, 68, 0.1);
             --high: #f97316;
@@ -25,12 +27,18 @@
             --medium-bg: rgba(234, 179, 8, 0.1);
             --low: #22c55e;
             --low-bg: rgba(34, 197, 94, 0.1);
+            --focus-outline: 2px solid #3b82f6;
+            --focus-offset: 2px;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -41,8 +49,18 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            line-height: 1.5;
         }
 
+        /* ===== FOCUS STYLES ===== */
+        button:focus,
+        textarea:focus,
+        a:focus {
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+
+        /* ===== HEADER ===== */
         header {
             padding: 1.5rem 2rem;
             border-bottom: 1px solid var(--border);
@@ -53,21 +71,8 @@
             z-index: 10;
         }
 
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #ef4444, #f97316);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
         header h1 {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
             letter-spacing: -0.025em;
         }
@@ -76,19 +81,33 @@
             color: var(--text-muted);
             font-size: 0.875rem;
             font-weight: 500;
+            margin-left: auto;
         }
 
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        /* ===== MAIN LAYOUT ===== */
         main {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
             padding: 2rem;
             flex: 1;
-            height: calc(100vh - 80px); /* rough header height */
             overflow: hidden;
         }
 
-        /* LEFT PANEL */
         .panel {
             background-color: var(--bg-panel);
             border: 1px solid var(--border);
@@ -108,8 +127,8 @@
         }
 
         .panel-title {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: var(--text-main);
         }
 
@@ -118,6 +137,7 @@
             color: var(--text-muted);
         }
 
+        /* ===== DEMO BUTTONS ===== */
         .demo-buttons {
             display: flex;
             gap: 0.75rem;
@@ -128,7 +148,7 @@
             background-color: var(--bg-elevated);
             color: var(--text-main);
             border: 1px solid var(--border);
-            padding: 0.5rem 1rem;
+            padding: 0.625rem 1rem;
             border-radius: 99px;
             font-size: 0.875rem;
             font-weight: 500;
@@ -141,10 +161,27 @@
             border-color: var(--text-muted);
         }
 
+        .demo-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ===== INPUT AREA ===== */
         .input-area {
             flex: 1;
             display: flex;
             flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .input-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .char-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
 
         textarea {
@@ -171,6 +208,7 @@
             color: #52525b;
         }
 
+        /* ===== BUTTONS ===== */
         .btn-analyze {
             background: linear-gradient(135deg, var(--accent), var(--accent-hover));
             color: white;
@@ -188,24 +226,81 @@
             box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
         }
 
-        .btn-analyze:hover {
+        .btn-analyze:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.39);
         }
 
-        .btn-analyze:active {
+        .btn-analyze:active:not(:disabled) {
             transform: translateY(0);
         }
 
-        .btn-analyze.loading {
-            opacity: 0.8;
+        .btn-analyze:disabled {
+            opacity: 0.6;
             pointer-events: none;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
             box-shadow: none;
         }
 
-        /* RIGHT PANEL: OUTPUT */
+        .btn-copy {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        /* ===== ALERT MESSAGES ===== */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--error);
+            color: #fca5a5;
+        }
+
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left-color: var(--accent);
+            color: #93c5fd;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== OUTPUT PANEL ===== */
         #output-panel {
             position: relative;
         }
@@ -281,7 +376,7 @@
             50% { opacity: 0.5; }
         }
 
-        /* RESULT VIEW */
+        /* ===== RESULT VIEW ===== */
         .result-view {
             display: none;
             flex-direction: column;
@@ -298,18 +393,20 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            gap: 1rem;
         }
 
         .badge {
-            padding: 0.5rem 1rem;
+            padding: 0.625rem 1rem;
             border-radius: 8px;
             font-weight: 700;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             letter-spacing: 0.05em;
             text-transform: uppercase;
+            inline-size: max-content;
         }
 
-        .badge.critical { background-color: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)); }
+        .badge.critical { background-color: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical); }
         .badge.high { background-color: var(--high-bg); color: var(--high); border: 1px solid var(--high); }
         .badge.medium { background-color: var(--medium-bg); color: var(--medium); border: 1px solid var(--medium); }
         .badge.low { background-color: var(--low-bg); color: var(--low); border: 1px solid var(--low); }
@@ -317,13 +414,14 @@
         .time-badge {
             background-color: var(--bg-elevated);
             color: var(--text-muted);
-            padding: 0.4rem 0.75rem;
+            padding: 0.5rem 0.75rem;
             border-radius: 6px;
             font-size: 0.75rem;
             border: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 0.35rem;
+            inline-size: max-content;
         }
 
         .incident-type {
@@ -337,6 +435,10 @@
             font-size: 1.1rem;
             line-height: 1.6;
             color: #e4e4e7;
+            padding: 1rem;
+            background-color: var(--bg-elevated);
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
         }
 
         .section-title {
@@ -354,7 +456,7 @@
             gap: 1rem;
         }
 
-        /* Map Embed */
+        /* ===== MAP ===== */
         .map-container {
             width: 100%;
             height: 160px;
@@ -370,7 +472,7 @@
             border: none;
         }
 
-        /* Facts List */
+        /* ===== FACTS LIST ===== */
         .facts-list {
             list-style: none;
             display: flex;
@@ -385,7 +487,7 @@
             border: 1px solid var(--border);
             font-size: 0.95rem;
             display: flex;
-            align-items:flex-start;
+            align-items: flex-start;
             gap: 0.75rem;
         }
 
@@ -394,7 +496,7 @@
             color: var(--accent);
             font-weight: bold;
             font-size: 1.2rem;
-            line-height: 1;
+            flex-shrink: 0;
         }
 
         .action-box {
@@ -404,7 +506,6 @@
             border-radius: 12px;
         }
 
-        .action-box .section-title { color: var(--accent); }
         .action-text {
             font-size: 1.1rem;
             font-weight: 600;
@@ -420,32 +521,15 @@
         }
 
         .dispatch-content {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 0.95rem;
             color: #d4d4d8;
             line-height: 1.5;
             white-space: pre-wrap;
+            word-break: break-word;
         }
 
-        .btn-copy {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 0.4rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-copy:hover {
-            color: #fff;
-            border-color: #fff;
-        }
-
+        /* ===== CONFIDENCE METER ===== */
         .confidence-meter {
             display: flex;
             align-items: center;
@@ -455,7 +539,7 @@
 
         .progress-bar-bg {
             flex: 1;
-            height: 6px;
+            height: 8px;
             background: var(--bg-elevated);
             border-radius: 99px;
             overflow: hidden;
@@ -463,7 +547,7 @@
 
         .progress-bar-fill {
             height: 100%;
-            background: var(--accent);
+            background: linear-gradient(90deg, var(--accent), var(--accent-hover));
             border-radius: 99px;
             width: 0%;
             transition: width 1s ease-out;
@@ -473,126 +557,183 @@
             font-size: 0.875rem;
             font-weight: 600;
             color: var(--text-muted);
+            min-width: 50px;
+            text-align: right;
         }
 
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-base); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
 
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             main {
                 grid-template-columns: 1fr;
                 height: auto;
                 overflow-y: auto;
             }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo-icon">C</div>
+    <!-- SKIP LINK -->
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+
+    <!-- HEADER -->
+    <header role="banner">
+        <div class="logo-icon" aria-hidden="true">⚡</div>
         <div>
             <h1>CrisisLens</h1>
         </div>
-        <span>// Emergency Command Bridge</span>
+        <span aria-label="Emergency Command Bridge" role="doc-subtitle">Emergency Command Bridge</span>
     </header>
 
-    <main>
-        <!-- LEFT PANEL -->
-        <div class="panel">
+    <!-- MAIN CONTENT -->
+    <main id="main-content">
+        <!-- LEFT PANEL: INPUT -->
+        <section class="panel" aria-labelledby="input-title">
             <div class="panel-header">
-                <h2 class="panel-title">Intelligence Input</h2>
+                <h2 class="panel-title" id="input-title">Intelligence Input</h2>
                 <p class="panel-subtitle">Select a demo sample or paste raw unstructured data.</p>
             </div>
 
-            <div class="demo-buttons">
-                <button class="demo-btn" onclick="loadSample(1)">Voice transcript</button>
-                <button class="demo-btn" onclick="loadSample(2)">Medical history</button>
-                <button class="demo-btn" onclick="loadSample(3)">News report</button>
+            <div class="demo-buttons" role="group" aria-label="Demo incident samples">
+                <button class="demo-btn" onclick="loadSample(1)" aria-label="Load voice transcript sample">Voice transcript</button>
+                <button class="demo-btn" onclick="loadSample(2)" aria-label="Load medical history sample">Medical history</button>
+                <button class="demo-btn" onclick="loadSample(3)" aria-label="Load news report sample">News report</button>
             </div>
+
+            <div id="errorAlert" class="alert alert-error" role="alert" aria-live="polite" aria-atomic="true"></div>
 
             <div class="input-area">
-                <textarea id="rawInput" placeholder="Paste any messy input here... (e.g. panicked 911 call transcript, raw scanner feeds, unformatted field reports)"></textarea>
+                <label for="rawInput" class="input-label">Incident Description</label>
+                <textarea
+                    id="rawInput"
+                    placeholder="Paste any messy input here... (e.g. panicked 911 call transcript, raw scanner feeds, unformatted field reports)"
+                    aria-describedby="inputHelp charCount"
+                    spellcheck="true"
+                ></textarea>
+                <p id="inputHelp" class="panel-subtitle">Maximum 5000 characters</p>
+                <p id="charCount" class="char-count" aria-live="polite">0 / 5000 characters</p>
             </div>
 
-            <button class="btn-analyze" id="analyzeBtn" onclick="analyzeIncident()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-                Analyze Emergency
+            <button
+                class="btn-analyze"
+                id="analyzeBtn"
+                onclick="analyzeIncident()"
+                aria-label="Analyze the emergency incident"
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                <span>Analyze Emergency</span>
             </button>
-        </div>
+        </section>
 
-        <!-- RIGHT PANEL -->
-        <div class="panel" id="output-panel">
+        <!-- RIGHT PANEL: OUTPUT -->
+        <section class="panel" id="output-panel" aria-labelledby="output-title">
             <!-- EMPTY STATE -->
-            <div class="empty-state" id="emptyState">
-                <div class="empty-icon">⌘</div>
+            <div class="empty-state" id="emptyState" role="status" aria-live="polite">
+                <div class="empty-icon" aria-hidden="true">⌘</div>
                 <p>Awaiting raw input.<br>Action card will appear here.</p>
             </div>
 
             <!-- LOADING STATE -->
-            <div class="loading-state" id="loadingState">
-                <div class="pulse-ring">
+            <div class="loading-state" id="loadingState" role="status" aria-live="polite" aria-busy="true">
+                <div class="pulse-ring" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
                 </div>
                 <div class="loading-text">Analyzing emergency input...</div>
             </div>
 
             <!-- RESULT STATE -->
-            <div class="result-view" id="resultState">
+            <div class="result-view" id="resultState" role="region" aria-live="polite">
                 <div class="result-header">
                     <div>
-                        <div class="badge" id="resSeverity">CRITICAL</div>
-                        <h2 class="incident-type" id="resType">Structure Fire</h2>
+                        <div class="badge" id="resSeverity" role="doc-subtitle">CRITICAL</div>
+                        <h3 class="incident-type" id="resType">Structure Fire</h3>
                     </div>
-                    <div class="time-badge">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <div class="time-badge" role="status" aria-label="Time sensitivity">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         T-SENS: <span id="resTime">MINUTES</span>
                     </div>
                 </div>
 
-                <div class="summary-box" id="resSummary">
-                    Multiple units responding to a fully involved commercial structure fire with potential exposures on the C side.
+                <div class="summary-box" id="resSummary" role="status">
+                    Multiple units responding to a fully involved commercial structure fire.
                 </div>
 
                 <div class="card-grid">
                     <div>
-                        <div class="section-title">Key Facts Identified</div>
-                        <ul class="facts-list" id="resFacts">
-                            <!-- Injected -->
+                        <h4 class="section-title">Key Facts Identified</h4>
+                        <ul class="facts-list" id="resFacts" aria-label="Key facts about the incident">
                         </ul>
                     </div>
                     <div>
-                         <div class="section-title">Location Intelligence</div>
-                         <div class="map-container">
-                             <iframe id="mapFrame" src="about:blank"></iframe>
-                         </div>
-                         <div style="margin-top:0.5rem; font-size:0.875rem; color:#d4d4d8;">
+                        <h4 class="section-title">Location Intelligence</h4>
+                        <div class="map-container" aria-label="Map of incident location">
+                            <iframe id="mapFrame" src="about:blank" title="Google Map of incident location"></iframe>
+                        </div>
+                        <div style="margin-top:0.5rem; font-size:0.875rem; color:#d4d4d8;">
                             Raw: <span id="resLocRaw" style="font-style:italic;"></span>
-                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="action-box">
-                    <div class="section-title">Highest Priority Action</div>
+                    <h4 class="section-title">Highest Priority Action</h4>
                     <div class="action-text" id="resAction">
                         Initiate a 2nd alarm assignment immediately.
                     </div>
                 </div>
 
                 <div class="dispatch-box">
-                    <button class="btn-copy" onclick="copyDispatch()">Copy</button>
-                    <div class="section-title">SMS Dispatch Template</div>
-                    <div class="dispatch-content" id="resDispatch">
-                        <!-- Injected -->
-                    </div>
+                    <button class="btn-copy" onclick="copyDispatch()" aria-label="Copy dispatch message to clipboard">Copy</button>
+                    <h4 class="section-title">SMS Dispatch Template</h4>
+                    <div class="dispatch-content" id="resDispatch"></div>
                 </div>
 
                 <div>
-                    <div class="section-title">AI Confidence Score</div>
-                    <div class="confidence-meter">
+                    <h4 class="section-title">AI Confidence Score</h4>
+                    <div class="confidence-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="confidenceBar">
                         <div class="progress-bar-bg">
                             <div class="progress-bar-fill" id="resConfidenceBar"></div>
                         </div>
@@ -600,12 +741,15 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </main>
 
     <script>
-        // API calls now go through backend (no exposed keys)
+        // ===========================
+        // CONFIGURATION
+        // ===========================
         const API_BASE = window.location.origin;
+        const MAX_INPUT_LENGTH = 5000;
 
         const SAMPLES = {
             1: "theres a guy down, hes not responding, near the big mall on MG road, i think its his heart, he mentioned blood thinners this morning, been maybe 3 minutes, someone call someone please",
@@ -613,40 +757,79 @@
             3: "Breaking: Multiple reports of gas leak near Koramangala metro station, Bangalore. Residents complaining of dizziness and nausea. At least 12 people evacuated. Source of leak unconfirmed. Winds blowing east."
         };
 
-        function loadSample(id) {
-            document.getElementById('rawInput').value = SAMPLES[id];
+        // ===========================
+        // UTILITIES
+        // ===========================
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
         }
 
+        function loadSample(id) {
+            document.getElementById('rawInput').value = SAMPLES[id];
+            updateCharCount();
+            document.getElementById('rawInput').focus();
+        }
+
+        function updateCharCount() {
+            const textarea = document.getElementById('rawInput');
+            const count = textarea.value.length;
+            const charCountEl = document.getElementById('charCount');
+            charCountEl.textContent = `${count} / ${MAX_INPUT_LENGTH} characters`;
+
+            if (count > MAX_INPUT_LENGTH) {
+                charCountEl.style.color = 'var(--error)';
+            } else {
+                charCountEl.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function showAlert(type, message) {
+            if (type === 'error') {
+                showError(message);
+            }
+        }
+
+        // ===========================
+        // MAIN ANALYSIS FUNCTION
+        // ===========================
         async function analyzeIncident() {
             const input = document.getElementById('rawInput').value.trim();
+            const btn = document.getElementById('analyzeBtn');
+
+            // Validation
             if (!input) {
-                alert("Please paste some input data first.");
+                showError('Please paste some input data first.');
                 return;
             }
 
-            // UI State
+            if (input.length < 10) {
+                showError('Input is too short. Please provide more details.');
+                return;
+            }
+
+            if (input.length > MAX_INPUT_LENGTH) {
+                showError(`Input exceeds maximum length of ${MAX_INPUT_LENGTH} characters.`);
+                return;
+            }
+
+            // Update UI
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('resultState').style.display = 'none';
+            document.getElementById('errorAlert').classList.remove('show');
             document.getElementById('loadingState').style.display = 'flex';
-            const btn = document.getElementById('analyzeBtn');
-            btn.classList.add('loading');
-            btn.innerHTML = 'Processing...';
-
-            const payload = {
-                contents: [{ parts: [{ text: input }] }],
-                systemInstruction: {
-                    parts: [{text: "You are CrisisLens, an emergency intelligence system. Convert messy unstructured input into a structured JSON action brief. Always respond ONLY with this JSON and nothing else:\n{\n  \"severity\": \"CRITICAL\" | \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"incident_type\": \"string\",\n  \"summary\": \"one sentence plain language for a first responder\",\n  \"location_raw\": \"extracted location text\",\n  \"location_address\": \"best address guess\",\n  \"time_sensitivity\": \"seconds\" | \"minutes\" | \"hours\",\n  \"key_facts\": [\"array of 3 facts\"],\n  \"recommended_action\": \"single most important action\",\n  \"dispatch_template\": \"under 160 chars SMS-ready message\",\n  \"confidence\": 0.0 to 1.0\n}\nNever add explanation. Never add markdown. Only valid JSON."}]
-                },
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            };
+            btn.disabled = true;
 
             try {
                 const response = await fetch(`${API_BASE}/api/analyze`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ input }),
+                    timeout: 30000
                 });
 
                 if (!response.ok) {
@@ -654,42 +837,39 @@
                     throw new Error(errorData.error || `Server error: ${response.status}`);
                 }
 
-                const parsed = await response.json();
-                renderResult(parsed);
+                const data = await response.json();
+                renderResult(data);
 
             } catch (err) {
-                console.warn("API failed, using fallback mock:", err);
-                renderResult({
-                    severity: "HIGH",
-                    incident_type: "Medical Emergency",
-                    summary: "Mock fallback: Unresponsive male potentially suffering from cardiac event.",
-                    location_raw: "near the big mall on MG road",
-                    location_address: "MG Road, Bangalore",
-                    time_sensitivity: "seconds",
-                    key_facts: ["Unresponsive", "On blood thinners", "Found 3 mins ago"],
-                    recommended_action: "Dispatch ALS ambulance immediately.",
-                    dispatch_template: "Med Emerge: Unresponsive male near MG Road mall. Hx blood thinners. ALS en route.",
-                    confidence: 0.85
-                });
+                console.error('Analysis failed:', err);
+                showError(err.message || 'Failed to analyze incident. Please try again.');
+                document.getElementById('emptyState').style.display = 'flex';
             } finally {
                 document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('resultState').style.display = 'flex';
-                btn.classList.remove('loading');
-                btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Analyze Emergency';
+                btn.disabled = false;
             }
         }
 
+        // ===========================
+        // RENDER RESULTS
+        // ===========================
         function renderResult(data) {
-            // Severity
+            // Severity badge
             const sevEl = document.getElementById('resSeverity');
-            sevEl.textContent = data.severity;
-            sevEl.className = 'badge ' + (data.severity ? data.severity.toLowerCase() : 'medium');
+            sevEl.textContent = data.severity || 'UNKNOWN';
+            const severityClass = (data.severity || 'medium').toLowerCase();
+            sevEl.className = `badge ${severityClass}`;
 
-            document.getElementById('resType').textContent = data.incident_type;
-            document.getElementById('resTime').textContent = data.time_sensitivity.toUpperCase();
-            document.getElementById('resSummary').textContent = data.summary;
+            // Incident type
+            document.getElementById('resType').textContent = data.incident_type || 'Unknown Incident';
 
-            // Facts
+            // Time sensitivity
+            document.getElementById('resTime').textContent = (data.time_sensitivity || 'UNKNOWN').toUpperCase();
+
+            // Summary
+            document.getElementById('resSummary').textContent = data.summary || 'No summary available';
+
+            // Key facts
             const factsEl = document.getElementById('resFacts');
             factsEl.innerHTML = '';
             (data.key_facts || []).forEach(f => {
@@ -699,35 +879,72 @@
             });
 
             // Location
-            document.getElementById('resLocRaw').textContent = data.location_raw;
+            const locRaw = data.location_raw || 'Unknown';
+            document.getElementById('resLocRaw').textContent = locRaw;
+
             if (data.location_address && data.location_address.toLowerCase() !== "unknown") {
-                document.getElementById('mapFrame').src = `https://maps.google.com/maps?q=${encodeURIComponent(data.location_address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+                document.getElementById('mapFrame').src =
+                    `https://maps.google.com/maps?q=${encodeURIComponent(data.location_address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
             } else {
                 document.getElementById('mapFrame').src = `about:blank`;
             }
 
-            document.getElementById('resAction').textContent = data.recommended_action;
-            document.getElementById('resDispatch').textContent = data.dispatch_template;
+            // Recommended action
+            document.getElementById('resAction').textContent = data.recommended_action || 'No specific action recommended';
 
-            // Confidence
-            const confPercent = Math.round((data.confidence || 0) * 100);
+            // Dispatch template
+            document.getElementById('resDispatch').textContent = data.dispatch_template || 'No dispatch template available';
 
-            // Reset bar
+            // Confidence score
+            const confPercent = Math.max(0, Math.min(100, Math.round((data.confidence || 0) * 100)));
             document.getElementById('resConfidenceBar').style.width = '0%';
 
             setTimeout(() => {
                 document.getElementById('resConfidenceBar').style.width = confPercent + '%';
+                document.getElementById('resConfidenceText').textContent = confPercent + '%';
+                document.getElementById('confidenceBar').setAttribute('aria-valuenow', confPercent);
             }, 100);
-            document.getElementById('resConfidenceText').textContent = confPercent + '% confidence';
+
+            // Show results
+            document.getElementById('resultState').style.display = 'flex';
         }
 
+        // ===========================
+        // COPY TO CLIPBOARD
+        // ===========================
         function copyDispatch() {
             const text = document.getElementById('resDispatch').textContent.trim();
-            navigator.clipboard.writeText(text);
-            const btn = document.querySelector('.btn-copy');
-            btn.textContent = "Copied!";
-            setTimeout(() => btn.textContent = "Copy", 2000);
+
+            if (!text) {
+                showError('No dispatch message to copy');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.btn-copy');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showError('Failed to copy to clipboard');
+            });
         }
+
+        // ===========================
+        // EVENT LISTENERS
+        // ===========================
+        document.getElementById('rawInput').addEventListener('input', updateCharCount);
+        document.getElementById('rawInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                analyzeIncident();
+            }
+        });
+
+        // Initialize
+        updateCharCount();
     </script>
 </body>
 </html>
